@@ -6,7 +6,6 @@ HERE = Path(__file__).resolve().parent
 DB_PATH = HERE / "books.db"
 
 
-# ---------------------------------------------------------------- Part 4: schema
 def create_schema(conn):
     """Build the normalized two-table schema from scratch.
 
@@ -15,7 +14,6 @@ def create_schema(conn):
     """
     cur = conn.cursor()
 
-    # Drop first so the script is re-runnable and always rebuilds cleanly
     cur.execute("DROP TABLE IF EXISTS books")
     cur.execute("DROP TABLE IF EXISTS categories")
 
@@ -43,19 +41,16 @@ def create_schema(conn):
     print("Schema created: categories + books (PK/FK)")
 
 
-# ------------------------------------------------------------------ Part 5: load
 def load_data(conn, df):
     """Insert categories first, then books carrying the matching category_id."""
     cur = conn.cursor()
 
-    # 1. Each unique category becomes one row -> {name: category_id}
     for name in sorted(df["category"].unique()):
         cur.execute("INSERT INTO categories (category_name) VALUES (?)", (name,))
 
     cur.execute("SELECT category_id, category_name FROM categories")
     cat_ids = {name: cid for cid, name in cur.fetchall()}
 
-    # 2. Books reference the category by id, not by repeating its name
     rows = [
         (r.title, r.price_gbp, r.price_inr, int(r.rating),
          int(r.in_stock), cat_ids[r.category])
@@ -70,7 +65,6 @@ def load_data(conn, df):
     print(f"Loaded {len(cat_ids)} categories and {len(rows)} books")
 
 
-# --------------------------------------------------------------- Part 5: queries
 QUERIES = {
     "Q1 — SELECT / WHERE: books rated 4 or above": """
         SELECT title, rating, price_gbp
@@ -135,7 +129,7 @@ def main():
     print(f"Read {len(df)} clean rows")
 
     conn = sqlite3.connect(DB_PATH)
-    conn.execute("PRAGMA foreign_keys = ON")   # SQLite needs FKs switched on explicitly
+    conn.execute("PRAGMA foreign_keys = ON")
 
     create_schema(conn)
     load_data(conn, df)

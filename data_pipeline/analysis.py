@@ -40,7 +40,6 @@ def read_sql_results(conn):
 def compare_join_vs_merge(conn):
     """Part 6b: reproduce the SQL JOIN with pd.merge and prove they match."""
 
-    # --- Approach A: the database does the work (SQL JOIN + GROUP BY) ---
     sql_join = """
         SELECT c.category_name,
                COUNT(b.book_id)           AS book_count,
@@ -52,8 +51,6 @@ def compare_join_vs_merge(conn):
     """
     sql_result = pd.read_sql(sql_join, conn)
 
-    # --- Approach B: pandas does the work (pd.merge + groupby), no SQL ---
-    # Pull the two tables in as plain DataFrames, then join them in memory.
     books = pd.read_sql("SELECT * FROM books", conn)
     categories = pd.read_sql("SELECT * FROM categories", conn)
 
@@ -65,12 +62,12 @@ def compare_join_vs_merge(conn):
     )
 
     merge_result = (
-        merged.groupby("category_name")          # equivalent to GROUP BY
+        merged.groupby("category_name")
               .agg(book_count=("book_id", "count"),
                    avg_price_inr=("price_inr", "mean"))
-              .round(2)                          # equivalent to ROUND(..., 2)
+              .round(2)
               .reset_index()
-              .sort_values("book_count", ascending=False)   # equivalent to ORDER BY
+              .sort_values("book_count", ascending=False)
               .reset_index(drop=True)
     )
 
@@ -84,7 +81,6 @@ def compare_join_vs_merge(conn):
     print("=" * 70)
     print(merge_result.to_string(index=False))
 
-    # --- Prove the two are identical ---
     identical = sql_result.equals(merge_result)
     print("\n" + "=" * 70)
     print(f"Do the two approaches match?  ->  {identical}")
