@@ -5,21 +5,21 @@ from urllib.parse import urljoin
 from pathlib import Path
 
 BASE = "http://books.toscrape.com/"
-HERE = Path(__file__).resolve().parent      # the data_pipeline folder itself
+HERE = Path(__file__).resolve().parent
 
 
 def get_soup(url):
     """Fetch one page and return it as a searchable BeautifulSoup tree."""
     resp = requests.get(url, timeout=20)
     resp.raise_for_status()
-    resp.encoding = "utf-8"          # avoids the "Â£" price-encoding glitch
+    resp.encoding = "utf-8"
     return BeautifulSoup(resp.text, "html.parser")
 
 
 def discover_categories():
     """Read the homepage sidebar -> list of (name, url) for every category."""
     soup = get_soup(BASE)
-    links = soup.select("div.side_categories ul li ul li a")  # skips top-level "Books"
+    links = soup.select("div.side_categories ul li ul li a")
     return [(a.get_text(strip=True), urljoin(BASE, a["href"])) for a in links]
 
 
@@ -32,11 +32,11 @@ def scrape_category(name, url):
             rows.append({
                 "title":        art.h3.a["title"],
                 "price":        art.select_one("p.price_color").get_text(strip=True),
-                "star_rating":  art.select_one("p.star-rating")["class"][1],  # e.g. "Three"
+                "star_rating":  art.select_one("p.star-rating")["class"][1],
                 "availability": art.select_one("p.instock.availability").get_text(strip=True),
                 "category":     name,
             })
-        nxt = soup.select_one("li.next a")       # follow "next" if this category paginates
+        nxt = soup.select_one("li.next a")
         url = urljoin(url, nxt["href"]) if nxt else None
     return rows
 
@@ -47,7 +47,7 @@ def main():
         print(f"Scraping category: {name}")
         all_rows.extend(scrape_category(name, url))
         used += 1
-        if len(all_rows) >= 60 and used >= 3:    # meets the >=60 books / >=3 categories rule
+        if len(all_rows) >= 60 and used >= 3:
             break
 
     df = pd.DataFrame(all_rows)

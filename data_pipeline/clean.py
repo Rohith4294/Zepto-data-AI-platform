@@ -2,12 +2,10 @@ import re
 import pandas as pd
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent      # the data_pipeline folder itself
+HERE = Path(__file__).resolve().parent
 
-# Project-defined fixed conversion rate (stated in README, no API lookup needed)
 GBP_TO_INR = 105.50
 
-# Maps the scraped word form of the rating to its integer value
 RATING_MAP = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
 
 
@@ -37,14 +35,10 @@ def main():
     df = pd.read_csv(HERE / "books_raw.csv")
     print(f"Loaded {len(df)} raw rows")
 
-    # --- Part 2: type conversion ---
     df["price_gbp"] = df["price"].apply(clean_price)
     df["rating"] = df["star_rating"].apply(clean_rating)
     df["in_stock"] = df["availability"].apply(clean_stock)
 
-    # --- Part 2: handle rows that failed to parse ---
-    # Numeric fields get MEDIAN IMPUTATION (keeps the row; the median resists
-    # outliers better than the mean). Justified in the README.
     n_bad_price = df["price_gbp"].isna().sum()
     n_bad_rating = df["rating"].isna().sum()
 
@@ -53,14 +47,12 @@ def main():
     if n_bad_rating:
         df["rating"] = df["rating"].fillna(df["rating"].median())
 
-    df["rating"] = df["rating"].astype(int)   # lock to int 1-5 after imputing
+    df["rating"] = df["rating"].astype(int)
 
     print(f"Imputed {n_bad_price} bad prices, {n_bad_rating} bad ratings")
 
-    # --- Part 3: fixed-rate currency conversion ---
     df["price_inr"] = (df["price_gbp"] * GBP_TO_INR).round(2)
 
-    # Keep only the columns the database schema needs
     out = df[["title", "category", "price_gbp", "price_inr", "rating", "in_stock"]]
 
     print("\n--- dtypes (proof of correct typing) ---")
