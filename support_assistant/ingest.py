@@ -18,7 +18,7 @@ def load_documents():
     """Read all 8 .txt files -> list of (doc_id, text)."""
     docs = []
     for path in sorted(DOCS_DIR.glob("*.txt")):
-        text = path.read_text(encoding="utf-8").strip()
+        text = path.read_text(encoding="utf-8-sig").strip()
         docs.append((path.stem, text))
     return docs
 
